@@ -1,0 +1,23 @@
+name: bitcoin-blockchain-parser-stripped
+
+on:
+    push:
+      branches:
+        - '*'
+
+jobs:
+    unittest:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v2
+            - name: Set up Python 3.13
+              uses: actions/setup-python@v5
+              with:
+                  python-version: 3.13
+            - name: Install dependencies
+              run: |
+                  python3.13 -m pip install -r requirements.txt
+            - name: Run unit tests
+              run: |
+                  python3.13 -m -m unittest -v
