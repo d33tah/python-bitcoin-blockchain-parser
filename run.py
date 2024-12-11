@@ -2,6 +2,7 @@ import json
 import base64
 import sys
 import datetime
+import traceback
 
 import flask
 import requests
@@ -25,24 +26,46 @@ class BytesEncoder(json.JSONEncoder):
 
 def get_hash_by_block_no(n):
     url = f"https://api.blockcypher.com/v1/btc/main/blocks/{n}"
-    h = requests.get(url).json()["hash"]
+    resp = requests.get(url)
+    try:
+        h = resp.json()["hash"]
+    except Exception as e:
+        raise Exception(f"Error getting hash: {e}. {resp.text=}") from e
     return h
 
 
 def get_bitcoin_by_block_hash(h):
     url2 = f"https://blockchain.info/rawblock/{h}?format=hex"
-    b = base64.b16decode(requests.get(url2).text.upper().encode())
+    resp = requests.get(url2)
+    try:
+        b = base64.b16decode(resp.text.upper().encode())
+    except Exception as e:
+        raise Exception(f"Error getting hash: {e}. {resp.text=}") from e
     return b
 
 
-@app.route("/<int:n>")
-def get_block(n):
-    buf = get_bitcoin_by_block_hash(get_hash_by_block_no(n))
+@app.route("/v1/byhash/<h>")
+def get_by_hash(h):
+    try:
+        buf = get_bitcoin_by_block_hash(h)
+    except Exception as e:
+        tb = traceback.format_exc()
+        return flask.Response(f"Error: {e}. {tb=}", status=500)
     sys.stderr.write(f"{buf=}\n")
     block = Block(buf)
     j = json.dumps(block.__dict__, cls=BytesEncoder, indent=4)
-    sys.stderr.write(f"{block.__dict__=}\n")
-    sys.stderr.write(f"{block.transactions[0].__dict__=}\n")
+    return flask.Response(j, mimetype="application/octet-stream")
+
+@app.route("/v1/byblockno/<int:n>")
+def get_by_blockno(n):
+    try:
+        buf = get_bitcoin_by_block_hash(get_hash_by_block_no(n))
+    except Exception as e:
+        tb = traceback.format_exc()
+        return flask.Response(f"Error: {e}. {tb=}", status=500)
+    sys.stderr.write(f"{buf=}\n")
+    block = Block(buf)
+    j = json.dumps(block.__dict__, cls=BytesEncoder, indent=4)
     return flask.Response(j, mimetype="application/octet-stream")
 
 
