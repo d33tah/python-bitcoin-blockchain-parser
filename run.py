@@ -54,7 +54,7 @@ def get_by_hash(h):
     sys.stderr.write(f"{buf=}\n")
     block = Block(buf)
     j = json.dumps(block.__dict__, cls=BytesEncoder, indent=4)
-    return flask.Response(j, mimetype="application/octet-stream")
+    return flask.Response(j, mimetype="application/json")
 
 @app.route("/v1/byblockno/<int:n>")
 def get_by_blockno(n):
@@ -66,7 +66,7 @@ def get_by_blockno(n):
     sys.stderr.write(f"{buf=}\n")
     block = Block(buf)
     j = json.dumps(block.__dict__, cls=BytesEncoder, indent=4)
-    return flask.Response(j, mimetype="application/octet-stream")
+    return flask.Response(j, mimetype="application/json")
 
 
 if __name__ == "__main__":
