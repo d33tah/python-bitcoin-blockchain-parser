@@ -12,6 +12,7 @@
 from bitcoin.core.script import *
 from binascii import b2a_hex
 from .utils_taproot import from_taproot
+from .utils import initprops
 
 
 def is_public_key(hex_data):
@@ -43,6 +44,8 @@ class Script(object):
         self._value = None
         self._operations = None
         self._addresses = None
+
+        initprops(self)
 
     @classmethod
     def from_hex(cls, hex_):
@@ -111,21 +114,27 @@ class Script(object):
     def is_p2tr(self):
         if len(self.operations) > 1 and type(self.operations[1]) == bytes:
             taproot = from_taproot(b2a_hex(self.operations[1]).decode("ascii"))
-            return self.operations[0] == 1 \
-                and isinstance(taproot, str) \
+            return (
+                self.operations[0] == 1
+                and isinstance(taproot, str)
                 and taproot.startswith("bc1p")
+            )
 
     def is_pubkey(self):
-        return len(self.operations) == 2 \
-            and self.operations[-1] == OP_CHECKSIG \
+        return (
+            len(self.operations) == 2
+            and self.operations[-1] == OP_CHECKSIG
             and is_public_key(self.operations[0])
+        )
 
     def is_pubkeyhash(self):
-        return len(self.hex) == 25 \
-            and self.operations[0] == OP_DUP \
-            and self.operations[1] == OP_HASH160 \
-            and self.operations[-2] == OP_EQUALVERIFY \
+        return (
+            len(self.hex) == 25
+            and self.operations[0] == OP_DUP
+            and self.operations[1] == OP_HASH160
+            and self.operations[-2] == OP_EQUALVERIFY
             and self.operations[-1] == OP_CHECKSIG
+        )
 
     def is_multisig(self):
         if len(self.operations) < 4:
@@ -136,18 +145,23 @@ class Script(object):
             return False
 
         for i in range(m):
-            if not is_public_key(self.operations[1+i]):
+            if not is_public_key(self.operations[1 + i]):
                 return False
 
         n = self.operations[-2]
-        if not isinstance(n, int) or n < m \
-                or self.operations[-1] != OP_CHECKMULTISIG:
+        if not isinstance(n, int) or n < m or self.operations[-1] != OP_CHECKMULTISIG:
             return False
 
         return True
 
     def is_unknown(self):
-        return not self.is_pubkeyhash() and not self.is_pubkey() \
-            and not self.is_p2sh() and not self.is_multisig() \
-            and not self.is_return() and not self.is_p2wpkh() \
-            and not self.is_p2wsh() and not self.is_p2tr()
+        return (
+            not self.is_pubkeyhash()
+            and not self.is_pubkey()
+            and not self.is_p2sh()
+            and not self.is_multisig()
+            and not self.is_return()
+            and not self.is_p2wpkh()
+            and not self.is_p2wsh()
+            and not self.is_p2tr()
+        )

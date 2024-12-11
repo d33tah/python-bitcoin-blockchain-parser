@@ -37,11 +37,11 @@ def SignMessage(key, message):
 
 
 class BitcoinMessage(ImmutableSerializable):
-    __slots__ = ['magic', 'message']
+    __slots__ = ["magic", "message"]
 
     def __init__(self, message="", magic="Bitcoin Signed Message:\n"):
-        object.__setattr__(self, 'message', message.encode("utf-8"))
-        object.__setattr__(self, 'magic', magic.encode("utf-8"))
+        object.__setattr__(self, "message", message.encode("utf-8"))
+        object.__setattr__(self, "magic", magic.encode("utf-8"))
 
     @classmethod
     def stream_deserialize(cls, f):
@@ -54,7 +54,7 @@ class BitcoinMessage(ImmutableSerializable):
         bitcoin.core.serialize.BytesSerializer.stream_serialize(self.message, f)
 
     def __str__(self):
-        return self.message.decode('ascii')
+        return self.message.decode("ascii")
 
     def __repr__(self):
-        return 'BitcoinMessage(%s, %s)' % (self.magic, self.message)
+        return "BitcoinMessage(%s, %s)" % (self.magic, self.message)

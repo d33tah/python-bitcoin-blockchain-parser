@@ -11,6 +11,7 @@
 
 from .utils import decode_varint, decode_compactsize, decompress_txout_amt
 
+
 def decompress_script(raw_hex):
     script_type = raw_hex[0]
     compressed_script = raw_hex[1:]
@@ -45,7 +46,7 @@ def decompress_script(raw_hex):
     elif script_type in [4, 5]:
         if len(compressed_script) != 33:
             raise Exception("Compressed script has wrong size")
-        prefix = format(script_type - 2, '02')
+        prefix = format(script_type - 2, "02")
         script = OutputScript.P2PK(get_uncompressed_pk(prefix + compressed_script[2:]))
 
     else:
@@ -57,9 +58,10 @@ def decompress_script(raw_hex):
 
 class BlockUndo(object):
     """
-    Represents a block of spent transaction outputs (coins), as encoded 
+    Represents a block of spent transaction outputs (coins), as encoded
     in the undo rev*.dat files
     """
+
     def __init__(self, raw_hex):
         self._raw_hex = raw_hex
         self.spends = []
@@ -75,6 +77,7 @@ class BlockUndo(object):
 
 class SpentTransaction(object):
     """Represents the script portion of a spent Transaction output"""
+
     def __init__(self, raw_hex=None):
         self._raw_hex = raw_hex
         self.outputs = []
@@ -124,7 +127,9 @@ class SpentOutput(object):
         pos += compressed_amt_len
 
         # get script
-        script_hex, script_pub_key_compressed_len = SpentScriptPubKey.extract_from_hex(raw_hex[pos:])
+        script_hex, script_pub_key_compressed_len = SpentScriptPubKey.extract_from_hex(
+            raw_hex[pos:]
+        )
         self.script_pub_key_compressed = SpentScriptPubKey(script_hex)
         self.len = pos + self.script_pub_key_compressed.len
 
@@ -132,7 +137,6 @@ class SpentOutput(object):
     def from_hex(cls, hex_):
         return cls(hex_)
 
-    
     @property
     def script(self):
         if not self.script:
@@ -140,9 +144,9 @@ class SpentOutput(object):
         return self.script
 
 
-
 class SpentScriptPubKey(object):
     """Represents the script portion of a spent Transaction output"""
+
     def __init__(self, raw_hex=None):
         self._raw_hex = raw_hex
         self.len = len(raw_hex)
@@ -171,7 +175,7 @@ class SpentScriptPubKey(object):
             # print("script_len_code, script_len_code_len: (%s, %s)" % (script_len_code, script_len_code_len))
             real_script_len = script_len_code - 6
             # print("real_script_len: %d" % real_script_len)
-            return (raw_hex[:script_len_code_len+real_script_len], real_script_len)
+            return (raw_hex[: script_len_code_len + real_script_len], real_script_len)
 
     @property
     def script(self):

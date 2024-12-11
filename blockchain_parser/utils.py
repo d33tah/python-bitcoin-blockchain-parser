@@ -11,8 +11,21 @@
 
 import hashlib
 import struct
+import inspect
 
 from .ripemd160 import ripemd160
+
+
+def initprops(obj):
+    properties = [
+        name
+        for name, value in inspect.getmembers(
+            type(obj), lambda v: isinstance(v, property)
+        )
+    ]
+    for prop in properties:
+        getattr(obj, prop)
+
 
 def btc_ripemd160(data):
     """Computes ripemd160(sha256(data))"""
@@ -30,35 +43,35 @@ def format_hash(hash_):
 
 
 def decode_uint32(data):
-    assert(len(data) == 4)
+    assert len(data) == 4
     return struct.unpack("<I", data)[0]
 
 
 def decode_uint64(data):
-    assert(len(data) == 8)
+    assert len(data) == 8
     return struct.unpack("<Q", data)[0]
 
 
 def decode_compactsize(data):
-    assert(len(data) > 0)
+    assert len(data) > 0
     size = int(data[0])
-    assert(size <= 255)
+    assert size <= 255
 
     if size < 253:
         return size, 1
 
     if size == 253:
-        format_ = '<H'
+        format_ = "<H"
     elif size == 254:
-        format_ = '<I'
+        format_ = "<I"
     elif size == 255:
-        format_ = '<Q'
+        format_ = "<Q"
     else:
         # Should never be reached
         assert 0, "unknown format_ for size : %s" % size
 
     size = struct.calcsize(format_)
-    return struct.unpack(format_, data[1:size+1])[0], size + 1
+    return struct.unpack(format_, data[1 : size + 1])[0], size + 1
 
 
 def decode_varint(raw_hex):
@@ -77,7 +90,7 @@ def decode_varint(raw_hex):
             print("IndexError caught on raw_hex: ", raw_hex, e)
             raise e
         pos += 1
-        n = (n << 7) | (data & 0x7f)
+        n = (n << 7) | (data & 0x7F)
         if data & 0x80 == 0:
             return n, pos
         n += 1
@@ -98,7 +111,7 @@ def decompress_txout_amt(amount_compressed_int):
     # x = 10*(9*n + d - 1) + e
     # x = 10*(n - 1)       + 9
     exponent = amount_compressed_int % 10
-    
+
     # integer division
     amount_compressed_int //= 10
 
@@ -107,10 +120,10 @@ def decompress_txout_amt(amount_compressed_int):
     # x = n - 1        | where e = 9
     n = 0
     if exponent < 9:
-        lastDigit = amount_compressed_int%9 + 1
+        lastDigit = amount_compressed_int % 9 + 1
         # integer division
         amount_compressed_int //= 9
-        n = amount_compressed_int*10 + lastDigit
+        n = amount_compressed_int * 10 + lastDigit
     else:
         n = amount_compressed_int + 1
 
@@ -119,7 +132,7 @@ def decompress_txout_amt(amount_compressed_int):
 
 
 def compress_txout_amt(n):
-    """ Compresses the Satoshi amount of a UTXO to be stored in the LevelDB. Code is a port from the Bitcoin Core C++
+    """Compresses the Satoshi amount of a UTXO to be stored in the LevelDB. Code is a port from the Bitcoin Core C++
     source:
         https://github.com/bitcoin/bitcoin/blob/v0.13.2/src/compressor.cpp#L133#L160
     :param n: Satoshi amount to be compressed.
@@ -137,8 +150,8 @@ def compress_txout_amt(n):
         e += 1
 
     if e < 9:
-        d = (n % 10)
-        assert (1 <= d <= 9)
+        d = n % 10
+        assert 1 <= d <= 9
         n //= 10
         return 1 + (n * 9 + d - 1) * 10 + e
     else:

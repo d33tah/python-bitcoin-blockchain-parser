@@ -11,7 +11,13 @@
 
 from math import ceil
 
-from .utils import decode_compactsize, decode_uint32, double_sha256, format_hash
+from .utils import (
+    decode_compactsize,
+    decode_uint32,
+    double_sha256,
+    format_hash,
+    initprops,
+)
 from .input import Input
 from .output import Output
 
@@ -40,7 +46,7 @@ class Transaction(object):
         # adds basic support for segwit transactions
         #   - https://bitcoincore.org/en/segwit_wallet_dev/
         #   - https://en.bitcoin.it/wiki/Protocol_documentation#BlockTransactions
-        if b'\x00\x01' == raw_hex[offset:offset + 2]:
+        if b"\x00\x01" == raw_hex[offset : offset + 2]:
             self.is_segwit = True
             offset += 2
 
@@ -68,18 +74,19 @@ class Transaction(object):
                 tx_witnesses_n, varint_size = decode_compactsize(raw_hex[offset:])
                 offset += varint_size
                 for j in range(tx_witnesses_n):
-                    component_length, varint_size = decode_compactsize(
-                        raw_hex[offset:])
+                    component_length, varint_size = decode_compactsize(raw_hex[offset:])
                     offset += varint_size
-                    witness = raw_hex[offset:offset + component_length]
+                    witness = raw_hex[offset : offset + component_length]
                     inp.add_witness(witness)
                     offset += component_length
 
         self._size = offset + 4
-        self.hex = raw_hex[:self._size]
+        self.hex = raw_hex[: self._size]
 
         if self._size != len(self.hex):
             raise Exception("Incomplete transaction!")
+
+        initprops(self)
 
     def __repr__(self):
         return "Transaction(%s)" % self.hash
@@ -105,7 +112,7 @@ class Transaction(object):
     @property
     def hash(self):
         """Returns the transaction's id. Equivalent to the hash for non SegWit transactions,
-        it differs from it for SegWit ones. """
+        it differs from it for SegWit ones."""
         if self._hash is None:
             self._hash = format_hash(double_sha256(self.hex))
 
@@ -139,14 +146,16 @@ class Transaction(object):
     @property
     def txid(self):
         """Returns the transaction's id. Equivalent to the hash for non SegWit transactions,
-        it differs from it for SegWit ones. """
+        it differs from it for SegWit ones."""
         if self._txid is None:
             # segwit transactions have two transaction ids/hashes, txid and wtxid
             # txid is a hash of all of the legacy transaction fields only
             if self.is_segwit:
-                txid_data = self.hex[:4] + self.hex[
-                                           6:self._offset_before_tx_witnesses] + self.hex[
-                                                                                 -4:]
+                txid_data = (
+                    self.hex[:4]
+                    + self.hex[6 : self._offset_before_tx_witnesses]
+                    + self.hex[-4:]
+                )
             else:
                 txid_data = self.hex
             self._txid = format_hash(double_sha256(txid_data))
@@ -181,10 +190,7 @@ class Transaction(object):
         if self.n_inputs == 1 and self.n_outputs == 1:
             return True
 
-        input_keys = [
-            (i.transaction_hash, i.transaction_index)
-            for i in self.inputs
-        ]
+        input_keys = [(i.transaction_hash, i.transaction_index) for i in self.inputs]
 
         if bip69_sort(input_keys) != input_keys:
             return False

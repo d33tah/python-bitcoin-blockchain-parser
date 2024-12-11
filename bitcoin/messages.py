@@ -28,15 +28,15 @@ from bitcoin.net import *
 import bitcoin
 
 MSG_WITNESS_FLAG = 1 << 30
-MSG_TYPE_MASK = 0xffffffff >> 2
+MSG_TYPE_MASK = 0xFFFFFFFF >> 2
 
 MSG_TX = 1
 MSG_BLOCK = 2
 MSG_FILTERED_BLOCK = 3
 MSG_CMPCT_BLOCK = 4
-MSG_WITNESS_BLOCK = MSG_BLOCK | MSG_WITNESS_FLAG,
-MSG_WITNESS_TX = MSG_TX | MSG_WITNESS_FLAG,
-MSG_FILTERED_WITNESS_BLOCK = MSG_FILTERED_BLOCK | MSG_WITNESS_FLAG,
+MSG_WITNESS_BLOCK = (MSG_BLOCK | MSG_WITNESS_FLAG,)
+MSG_WITNESS_TX = (MSG_TX | MSG_WITNESS_FLAG,)
+MSG_FILTERED_WITNESS_BLOCK = (MSG_FILTERED_BLOCK | MSG_WITNESS_FLAG,)
 
 
 class MsgSerializable(Serializable):
@@ -78,23 +78,25 @@ class MsgSerializable(Serializable):
 
         # check magic
         if recvbuf[:4] != bitcoin.params.MESSAGE_START:
-            raise ValueError("Invalid message start '%s', expected '%s'" %
-                             (b2x(recvbuf[:4]), b2x(bitcoin.params.MESSAGE_START)))
+            raise ValueError(
+                "Invalid message start '%s', expected '%s'"
+                % (b2x(recvbuf[:4]), b2x(bitcoin.params.MESSAGE_START))
+            )
 
         # remaining header fields: command, msg length, checksum
-        command = recvbuf[4:4+12].split(b"\x00", 1)[0]
-        msglen = struct.unpack(b"<i", recvbuf[4+12:4+12+4])[0]
-        checksum = recvbuf[4+12+4:4+12+4+4]
+        command = recvbuf[4 : 4 + 12].split(b"\x00", 1)[0]
+        msglen = struct.unpack(b"<i", recvbuf[4 + 12 : 4 + 12 + 4])[0]
+        checksum = recvbuf[4 + 12 + 4 : 4 + 12 + 4 + 4]
 
         # read message body
         recvbuf += ser_read(f, msglen)
 
-        msg = recvbuf[4+12+4+4:4+12+4+4+msglen]
+        msg = recvbuf[4 + 12 + 4 + 4 : 4 + 12 + 4 + 4 + msglen]
         th = hashlib.sha256(msg).digest()
         h = hashlib.sha256(th).digest()
         if checksum != h[:4]:
             raise ValueError("got bad checksum %s" % repr(recvbuf))
-            recvbuf = recvbuf[4+12+4+4+msglen:]
+            recvbuf = recvbuf[4 + 12 + 4 + 4 + msglen :]
 
         if command in messagemap:
             cls = messagemap[command]
@@ -120,8 +122,9 @@ class msg_version(MsgSerializable):
         self.addrTo = CAddress(PROTO_VERSION)
         self.addrFrom = CAddress(PROTO_VERSION)
         self.nNonce = random.getrandbits(64)
-        self.strSubVer = (b'/python-bitcoinlib:' +
-                          bitcoin.__version__.encode('ascii') + b'/')
+        self.strSubVer = (
+            b"/python-bitcoinlib:" + bitcoin.__version__.encode("ascii") + b"/"
+        )
         self.nStartingHeight = -1
         self.fRelay = True
 
@@ -139,7 +142,7 @@ class msg_version(MsgSerializable):
             c.nNonce = struct.unpack(b"<Q", ser_read(f, 8))[0]
             c.strSubVer = VarStringSerializer.stream_deserialize(f)
             if c.nVersion >= 209:
-                c.nStartingHeight = struct.unpack(b"<i", ser_read(f,4))[0]
+                c.nStartingHeight = struct.unpack(b"<i", ser_read(f, 4))[0]
             else:
                 c.nStartingHeight = None
         else:
@@ -148,7 +151,7 @@ class msg_version(MsgSerializable):
             c.strSubVer = None
             c.nStartingHeight = None
         if c.nVersion >= 70001:
-            c.fRelay = struct.unpack(b"<B", ser_read(f,1))[0]
+            c.fRelay = struct.unpack(b"<B", ser_read(f, 1))[0]
         else:
             c.fRelay = True
         return c
@@ -165,7 +168,20 @@ class msg_version(MsgSerializable):
         f.write(struct.pack(b"<B", self.fRelay))
 
     def __repr__(self):
-        return "msg_version(nVersion=%i nServices=%i nTime=%s addrTo=%s addrFrom=%s nNonce=0x%016X strSubVer=%s nStartingHeight=%i fRelay=%r)" % (self.nVersion, self.nServices, time.ctime(self.nTime), repr(self.addrTo), repr(self.addrFrom), self.nNonce, self.strSubVer, self.nStartingHeight, self.fRelay)
+        return (
+            "msg_version(nVersion=%i nServices=%i nTime=%s addrTo=%s addrFrom=%s nNonce=0x%016X strSubVer=%s nStartingHeight=%i fRelay=%r)"
+            % (
+                self.nVersion,
+                self.nServices,
+                time.ctime(self.nTime),
+                repr(self.addrTo),
+                repr(self.addrFrom),
+                self.nNonce,
+                self.strSubVer,
+                self.nStartingHeight,
+                self.fRelay,
+            )
+        )
 
 
 class msg_verack(MsgSerializable):
@@ -223,7 +239,7 @@ class msg_alert(MsgSerializable):
         self.alert.stream_serialize(f)
 
     def __repr__(self):
-        return "msg_alert(alert=%s)" % (repr(self.alert), )
+        return "msg_alert(alert=%s)" % (repr(self.alert),)
 
 
 class msg_inv(MsgSerializable):
@@ -265,6 +281,7 @@ class msg_getdata(MsgSerializable):
     def __repr__(self):
         return "msg_getdata(inv=%s)" % (repr(self.inv))
 
+
 class msg_notfound(MsgSerializable):
     command = b"notfound"
 
@@ -291,7 +308,7 @@ class msg_getblocks(MsgSerializable):
     def __init__(self, protover=PROTO_VERSION):
         super(msg_getblocks, self).__init__(protover)
         self.locator = CBlockLocator()
-        self.hashstop = b'\x00'*32
+        self.hashstop = b"\x00" * 32
 
     @classmethod
     def msg_deser(cls, f, protover=PROTO_VERSION):
@@ -305,7 +322,10 @@ class msg_getblocks(MsgSerializable):
         f.write(self.hashstop)
 
     def __repr__(self):
-        return "msg_getblocks(locator=%s hashstop=%s)" % (repr(self.locator), b2x(self.hashstop))
+        return "msg_getblocks(locator=%s hashstop=%s)" % (
+            repr(self.locator),
+            b2x(self.hashstop),
+        )
 
 
 class msg_getheaders(MsgSerializable):
@@ -314,7 +334,7 @@ class msg_getheaders(MsgSerializable):
     def __init__(self, protover=PROTO_VERSION):
         super(msg_getheaders, self).__init__(protover)
         self.locator = CBlockLocator()
-        self.hashstop = b'\x00'*32
+        self.hashstop = b"\x00" * 32
 
     @classmethod
     def msg_deser(cls, f, protover=PROTO_VERSION):
@@ -328,7 +348,10 @@ class msg_getheaders(MsgSerializable):
         f.write(self.hashstop)
 
     def __repr__(self):
-        return "msg_getheaders(locator=%s hashstop=%s)" % (repr(self.locator), b2x(self.hashstop))
+        return "msg_getheaders(locator=%s hashstop=%s)" % (
+            repr(self.locator),
+            b2x(self.hashstop),
+        )
 
 
 class msg_headers(MsgSerializable):
@@ -438,7 +461,7 @@ class msg_pong(MsgSerializable):
     @classmethod
     def msg_deser(cls, f, protover=PROTO_VERSION):
         c = cls()
-        c.nonce = struct.unpack(b"<Q", ser_read(f,8))[0]
+        c.nonce = struct.unpack(b"<Q", ser_read(f, 8))[0]
         return c
 
     def msg_ser(self, f):
@@ -453,15 +476,15 @@ class msg_reject(MsgSerializable):
 
     def __init__(self, protover=PROTO_VERSION):
         super(msg_reject, self).__init__(protover)
-        self.message = b'(Message Unitialized)'
-        self.ccode = b'\0'
-        self.reason = b'(Reason Unitialized)'
+        self.message = b"(Message Unitialized)"
+        self.ccode = b"\0"
+        self.reason = b"(Reason Unitialized)"
 
     @classmethod
     def msg_deser(cls, f, protover=PROTO_VERSION):
         c = cls()
         c.message = VarStringSerializer.stream_deserialize(f)
-        c.ccode = struct.unpack(b"<c", ser_read(f,1))[0]
+        c.ccode = struct.unpack(b"<c", ser_read(f, 1))[0]
         c.reason = VarStringSerializer.stream_deserialize(f)
         return c
 
@@ -471,7 +494,11 @@ class msg_reject(MsgSerializable):
         VarStringSerializer.stream_serialize(self.reason, f)
 
     def __repr__(self):
-        return "msg_reject(messsage=%s, ccode=%s, reason=%s)" % (self.message, self.ccode, self.reason)
+        return "msg_reject(messsage=%s, ccode=%s, reason=%s)" % (
+            self.message,
+            self.ccode,
+            self.reason,
+        )
 
 
 class msg_mempool(MsgSerializable):
@@ -490,10 +517,26 @@ class msg_mempool(MsgSerializable):
     def __repr__(self):
         return "msg_mempool()"
 
-msg_classes = [msg_version, msg_verack, msg_addr, msg_alert, msg_inv,
-               msg_getdata, msg_notfound, msg_getblocks, msg_getheaders,
-               msg_headers, msg_tx, msg_block, msg_getaddr, msg_ping,
-               msg_pong, msg_reject, msg_mempool]
+
+msg_classes = [
+    msg_version,
+    msg_verack,
+    msg_addr,
+    msg_alert,
+    msg_inv,
+    msg_getdata,
+    msg_notfound,
+    msg_getblocks,
+    msg_getheaders,
+    msg_headers,
+    msg_tx,
+    msg_block,
+    msg_getaddr,
+    msg_ping,
+    msg_pong,
+    msg_reject,
+    msg_mempool,
+]
 
 messagemap = {}
 for cls in msg_classes:
@@ -501,31 +544,31 @@ for cls in msg_classes:
 
 
 __all__ = (
-        'MSG_TX',
-        'MSG_BLOCK',
-        'MSG_FILTERED_BLOCK',
-        'MSG_CMPCT_BLOCK',
-        'MSG_TYPE_MASK',
-        'MSG_WITNESS_TX',
-        'MSG_WITNESS_BLOCK',
-        'MSG_WITNESS_FLAG',
-        'MSG_FILTERED_WITNESS_BLOCK',
-        'MsgSerializable',
-        'msg_version',
-        'msg_verack',
-        'msg_addr',
-        'msg_alert',
-        'msg_inv',
-        'msg_getdata',
-        'msg_getblocks',
-        'msg_getheaders',
-        'msg_headers',
-        'msg_tx',
-        'msg_block',
-        'msg_getaddr',
-        'msg_ping',
-        'msg_pong',
-        'msg_mempool',
-        'msg_classes',
-        'messagemap',
+    "MSG_TX",
+    "MSG_BLOCK",
+    "MSG_FILTERED_BLOCK",
+    "MSG_CMPCT_BLOCK",
+    "MSG_TYPE_MASK",
+    "MSG_WITNESS_TX",
+    "MSG_WITNESS_BLOCK",
+    "MSG_WITNESS_FLAG",
+    "MSG_FILTERED_WITNESS_BLOCK",
+    "MsgSerializable",
+    "msg_version",
+    "msg_verack",
+    "msg_addr",
+    "msg_alert",
+    "msg_inv",
+    "msg_getdata",
+    "msg_getblocks",
+    "msg_getheaders",
+    "msg_headers",
+    "msg_tx",
+    "msg_block",
+    "msg_getaddr",
+    "msg_ping",
+    "msg_pong",
+    "msg_mempool",
+    "msg_classes",
+    "messagemap",
 )

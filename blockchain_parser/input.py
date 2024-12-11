@@ -9,7 +9,7 @@
 # modified, propagated, or distributed except according to the terms contained
 # in the LICENSE file.
 
-from .utils import decode_compactsize, decode_uint32, format_hash
+from .utils import decode_compactsize, decode_uint32, format_hash, initprops
 from .script import Script
 
 
@@ -27,7 +27,9 @@ class Input(object):
         self._script_start = 36 + varint_length
 
         self.size = self._script_start + self._script_length + 4
-        self.hex = raw_hex[:self.size]
+        self.hex = raw_hex[: self.size]
+
+        initprops(self)
 
     def add_witness(self, witness):
         self._witnesses.append(witness)
@@ -59,9 +61,7 @@ class Input(object):
     def sequence_number(self):
         """Returns the input's sequence number"""
         if self._sequence_number is None:
-            self._sequence_number = decode_uint32(
-                self.hex[self.size-4:self.size]
-            )
+            self._sequence_number = decode_uint32(self.hex[self.size - 4 : self.size])
         return self._sequence_number
 
     @property
@@ -69,7 +69,7 @@ class Input(object):
         """Returns a Script object representing the redeem script"""
         if self._script is None:
             end = self._script_start + self._script_length
-            self._script = Script.from_hex(self.hex[self._script_start:end])
+            self._script = Script.from_hex(self.hex[self._script_start : end])
         return self._script
 
     @property

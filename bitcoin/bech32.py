@@ -14,22 +14,26 @@
 from bitcoin.segwit_addr import encode, decode
 import bitcoin
 
+
 class Bech32Error(Exception):
     pass
 
+
 class Bech32ChecksumError(Bech32Error):
     pass
+
 
 class CBech32Data(bytes):
     """Bech32-encoded data
 
     Includes a witver and checksum.
     """
+
     def __new__(cls, s):
-        """from bech32 addr to """
+        """from bech32 addr to"""
         witver, data = decode(bitcoin.params.BECH32_HRP, s)
         if witver is None and data is None:
-            raise Bech32Error('Bech32 decoding error')
+            raise Bech32Error("Bech32 decoding error")
 
         return cls.from_bytes(witver, data)
 
@@ -45,7 +49,9 @@ class CBech32Data(bytes):
     def from_bytes(cls, witver, witprog):
         """Instantiate from witver and data"""
         if not (0 <= witver <= 16):
-            raise ValueError('witver must be in range 0 to 16 inclusive; got %d' % witver)
+            raise ValueError(
+                "witver must be in range 0 to 16 inclusive; got %d" % witver
+            )
         self = bytes.__new__(cls, witprog)
         self.witver = witver
 
@@ -57,17 +63,18 @@ class CBech32Data(bytes):
         Note that it's the data represented that is converted; the checkum and
         witver is not included.
         """
-        return b'' + self
+        return b"" + self
 
     def __str__(self):
         """Convert to string"""
         return encode(bitcoin.params.BECH32_HRP, self.witver, self)
 
     def __repr__(self):
-        return '%s(%r)' % (self.__class__.__name__, str(self))
+        return "%s(%r)" % (self.__class__.__name__, str(self))
+
 
 __all__ = (
-    'Bech32Error',
-    'Bech32ChecksumError',
-    'CBech32Data',
+    "Bech32Error",
+    "Bech32ChecksumError",
+    "CBech32Data",
 )

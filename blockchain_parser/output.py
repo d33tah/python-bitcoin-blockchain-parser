@@ -9,7 +9,7 @@
 # modified, propagated, or distributed except according to the terms contained
 # in the LICENSE file.
 
-from .utils import decode_compactsize, decode_uint64
+from .utils import decode_compactsize, decode_uint64, initprops
 from .script import Script
 from .address import Address
 
@@ -25,9 +25,11 @@ class Output(object):
         script_length, varint_size = decode_compactsize(raw_hex[8:])
         script_start = 8 + varint_size
 
-        self._script_hex = raw_hex[script_start:script_start+script_length]
+        self._script_hex = raw_hex[script_start : script_start + script_length]
         self.size = script_start + script_length
         self._value_hex = raw_hex[:8]
+
+        initprops(self)
 
     @classmethod
     def from_hex(cls, hex_):
@@ -64,12 +66,11 @@ class Output(object):
                 address = Address.from_ripemd160(self.script.operations[2])
                 self._addresses.append(address)
             elif self.type == "p2sh":
-                address = Address.from_ripemd160(self.script.operations[1],
-                                                 type="p2sh")
+                address = Address.from_ripemd160(self.script.operations[1], type="p2sh")
                 self._addresses.append(address)
             elif self.type == "multisig":
                 n = self.script.operations[-2]
-                for operation in self.script.operations[1:1+n]:
+                for operation in self.script.operations[1 : 1 + n]:
                     self._addresses.append(Address.from_public_key(operation))
             elif self.type == "p2wpkh":
                 address = Address.from_bech32(self.script.operations[1], 0)

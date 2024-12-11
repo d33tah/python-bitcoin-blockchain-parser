@@ -11,7 +11,7 @@
 
 from .transaction import Transaction
 from .block_header import BlockHeader
-from .utils import format_hash, decode_compactsize, double_sha256
+from .utils import format_hash, decode_compactsize, double_sha256, initprops
 
 
 def get_block_transactions(raw_hex):
@@ -29,9 +29,8 @@ def get_block_transactions(raw_hex):
         # Try from 1024 (1KiB) -> 1073741824 (1GiB) slice widths
         for j in range(0, 20):
             try:
-                offset_e = offset + (1024 * 2 ** j)
-                transaction = Transaction.from_hex(
-                    transaction_data[offset:offset_e])
+                offset_e = offset + (1024 * 2**j)
+                transaction = Transaction.from_hex(transaction_data[offset:offset_e])
                 yield transaction
                 break
             except:
@@ -55,6 +54,7 @@ class Block(object):
         self.size = len(raw_hex)
         self.height = height
         self.blk_file = blk_file
+        initprops(self)
 
     def __repr__(self):
         return "Block(%s)" % self.hash

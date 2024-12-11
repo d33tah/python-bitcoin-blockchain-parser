@@ -12,7 +12,7 @@
 from datetime import datetime
 from bitcoin.core import CBlockHeader
 
-from .utils import decode_uint32, format_hash
+from .utils import decode_uint32, format_hash, initprops
 
 
 class BlockHeader(object):
@@ -28,6 +28,8 @@ class BlockHeader(object):
         self._difficulty = None
 
         self.hex = raw_hex[:80]
+
+        initprops(self)
 
     def __repr__(self):
         return "BlockHeader(previous_block_hash=%s)" % self.previous_block_hash
@@ -62,9 +64,7 @@ class BlockHeader(object):
     def timestamp(self):
         """Returns the timestamp of the block as a UTC datetime object"""
         if self._timestamp is None:
-            self._timestamp = datetime.utcfromtimestamp(
-                decode_uint32(self.hex[68:72])
-            )
+            self._timestamp = datetime.utcfromtimestamp(decode_uint32(self.hex[68:72]))
         return self._timestamp
 
     @property

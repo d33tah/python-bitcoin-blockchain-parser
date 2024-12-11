@@ -11,7 +11,7 @@
 
 from bitcoin import base58
 from bitcoin.bech32 import CBech32Data
-from .utils import btc_ripemd160, double_sha256
+from .utils import btc_ripemd160, double_sha256, initprops
 from .utils_taproot import from_taproot
 from binascii import b2a_hex
 
@@ -25,6 +25,7 @@ class Address(object):
         self._address = address
         self.type = type
         self._segwit_version = segwit_version
+        initprops(self)
 
     def __repr__(self):
         return "Address(addr=%s)" % self.address
@@ -70,7 +71,7 @@ class Address(object):
                 tweaked_pubkey = b2a_hex(self.hash).decode("ascii")
                 self._address = from_taproot(tweaked_pubkey)
             elif self.type != "bech32":
-                version = b'\x00' if self.type == "normal" else b'\x05'
+                version = b"\x00" if self.type == "normal" else b"\x05"
                 checksum = double_sha256(version + self.hash)
 
                 self._address = base58.encode(version + self.hash + checksum[:4])
