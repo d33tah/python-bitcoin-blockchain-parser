@@ -40,7 +40,7 @@ def get_block(n):
     buf = get_bitcoin_by_block_hash(get_hash_by_block_no(n))
     sys.stderr.write(f"{buf=}\n")
     block = Block(buf)
-    j = json.dumps(block.__dict__, cls=BytesEncoder)
+    j = json.dumps(block.__dict__, cls=BytesEncoder, indent=4)
     sys.stderr.write(f"{block.__dict__=}\n")
     sys.stderr.write(f"{block.transactions[0].__dict__=}\n")
     return flask.Response(j, mimetype="application/octet-stream")
